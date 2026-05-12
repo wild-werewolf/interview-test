@@ -1,0 +1,135 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-deals
+      author: interview
+      changes:
+        - createTable:
+            tableName: deals
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: NUMERIC(19,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: NUMERIC(19,2)
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: deals
+            indexName: ix_deals_status
+            columns:
+              - column:
+                  name: status
+  - changeSet:
+      id: 002-create-deal-calculation-tasks
+      author: interview
+      changes:
+        - createTable:
+            tableName: deal_calculation_tasks
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: deal_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_deal_calculation_tasks_deal
+                    references: deals(id)
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempt
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_attempts
+                  type: INTEGER
+                  defaultValueNumeric: 3
+                  constraints:
+                    nullable: false
+              - column:
+                  name: available_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: locked_until
+                  type: TIMESTAMPTZ
+              - column:
+                  name: processing_token
+                  type: UUID
+              - column:
+                  name: last_error
+                  type: VARCHAR(1000)
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: deal_calculation_tasks
+            indexName: ix_deal_calculation_tasks_available
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: available_at
+              - column:
+                  name: locked_until
+        - sql:
+            sql: >
+              create unique index ux_deal_calculation_tasks_active
+              on deal_calculation_tasks (deal_id)
+              where status in ('NEW', 'PROCESSING')

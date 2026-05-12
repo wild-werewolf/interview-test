@@ -1,0 +1,199 @@
+openapi: 3.0.3
+info:
+  title: Deal Calculation Interview API
+  version: 1.0.0
+tags:
+  - name: Deals
+  - name: InternalTasks
+paths:
+  /deals:
+    post:
+      tags:
+        - Deals
+      operationId: createDeal
+      summary: Create a deal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDealRequest'
+      responses:
+        '201':
+          description: Deal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DealResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /deals/{id}:
+    get:
+      tags:
+        - Deals
+      operationId: getDeal
+      summary: Get deal by id
+      parameters:
+        - $ref: '#/components/parameters/DealId'
+      responses:
+        '200':
+          description: Deal found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DealResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /deals/{id}/calculate:
+    post:
+      tags:
+        - Deals
+      operationId: requestDealCalculation
+      summary: Request deal price calculation
+      parameters:
+        - $ref: '#/components/parameters/DealId'
+      responses:
+        '200':
+          description: Deal was already calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DealResponse'
+        '202':
+          description: Calculation was accepted or already requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DealResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /internal/tasks/deal-calculation/process-next:
+    post:
+      tags:
+        - InternalTasks
+      operationId: processNextDealCalculationTask
+      summary: Process one available deal calculation task
+      responses:
+        '200':
+          description: Processing result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskProcessingResponse'
+components:
+  parameters:
+    DealId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Invalid state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    CreateDealRequest:
+      type: object
+      required:
+        - userId
+        - amount
+        - currency
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+        amount:
+          type: number
+          minimum: 0.01
+          multipleOf: 0.01
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+    DealResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - amount
+        - currency
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        amount:
+          type: number
+        currency:
+          type: string
+        price:
+          type: number
+          nullable: true
+        status:
+          $ref: '#/components/schemas/DealStatus'
+    DealStatus:
+      type: string
+      enum:
+        - NEW
+        - CALCULATION_REQUESTED
+        - PROCESSING
+        - CALCULATED
+        - PRICE_NOT_FOUND
+        - FAILED
+    TaskProcessingResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          $ref: '#/components/schemas/TaskProcessingStatus'
+        taskId:
+          type: integer
+          format: int64
+          nullable: true
+        message:
+          type: string
+    TaskProcessingStatus:
+      type: string
+      enum:
+        - NO_TASK
+        - SUCCESS
+        - PRICE_NOT_FOUND
+        - RETRY_SCHEDULED
+        - FAILED
+        - STALE_ATTEMPT
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string

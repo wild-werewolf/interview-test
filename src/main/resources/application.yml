@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: deal-calculation-candidate
+  datasource:
+    url: jdbc:postgresql://localhost:5432/deal_calculation
+    username: deal
+    password: deal
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+pricing:
+  base-url: http://localhost:9090
+
+deal-calculation:
+  scheduler:
+    enabled: false
+    fixed-delay: 5000
+  worker:
+    lease-seconds: 30
